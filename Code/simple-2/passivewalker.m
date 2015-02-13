@@ -18,8 +18,10 @@ global check;
     
 
     %%%% Initial State %%%%%
-    q1 = 0.2; u1 = -0.2;
-    q2 = 0.4; u2 = -0.3;
+    q1 = 0.2; % theta
+    u1 = -0.2; % theta_dot
+    q2 = 0.4; % phi
+    u2 = -0.3; % phi_dot
 
     z0 = [q1 u1 q2 u2];
    
@@ -27,7 +29,7 @@ global check;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
-steps = 190; %number of steps to animate
+steps = 100; %number of steps to animate
 fps = 10; 
 
 
@@ -48,9 +50,9 @@ end
 
   
 
-
+tic
 [z,t] = onestep(zstar,walker,steps);
-
+toc
 
 
 disp('Some plots...')
@@ -99,9 +101,9 @@ z_ode = z0;
 
 for i=1:steps
     check=i;
-    options=odeset('abstol',1e-13,'reltol',1e-13,'events',@collision);
+    options=odeset('abstol',1e-12,'reltol',1e-12,'events',@collision);
     tspan = linspace(t0,t0+dt,time_stamps);
-    [t_temp, z_temp] = ode45(@single_stance,tspan,z0,options,walker);
+    [t_temp, z_temp, TE, YE, IE] = ode45(@single_stance,tspan,z0,options,walker);
     
     zplus=heelstrike(t_temp(end),z_temp(end,:),walker); 
     
