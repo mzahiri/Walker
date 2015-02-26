@@ -113,6 +113,11 @@ for i=1:steps
     %%
     if check==1 %%simulation part
         
+        if mod(i,2)==0
+            flag1=0;
+        else
+            flag1=1;
+        end
     [d,c]=size(z_temp);
     for j=1:d
         if mod(j,4)==0
@@ -132,7 +137,7 @@ figure(1)
         %end
 
         % Draw Robot
-        if flag==0
+        if flag1==0
             plot([qx0(1), qx1(1)],[qx0(2), qx1(2)],'-b');
             plot([qx1(1), qx2(1)],[qx1(2), qx2(2)],'-r');
         else
