@@ -1,7 +1,6 @@
 
 
 
-
 %% passive walker with simulation **********
 %%%%%%%%%%%%%
 %%%%%%%%%%%%%
@@ -17,7 +16,10 @@ close all
 format long
 global check;
 check=0;
+global kk;%
+global fsol;%
 
+kk=0;%
     
     %% c = COM on the leg from hip, w = COM fore-aft offset, r = radius of feet
     %% M = hip mass, m = leg mass, I = leg inertia, l = leg length
@@ -34,8 +36,9 @@ check=0;
    
     
 
-steps = 10; %number of steps to animate
+steps = 3; %number of steps to animate
 fps = 10; 
+fsol=0;%
 
 
 
@@ -48,7 +51,7 @@ else
     error('Root finder not converged, change guess or change system parameters')
 end
 
- 
+ fsol=1;%
 check=1;
   
 
@@ -75,6 +78,9 @@ zdiff=onestep(z0,walker)-z0;
 function [z,t]=onestep(z0,walker,steps)
 %===================================================================
 global check;
+global fsol;%
+global kk; %
+
 M = walker.M;  m = walker.m; I = walker.I;   
 l = walker.l;  c = walker.c; w = walker.w;   
 r = walker.r;  g = walker.g; gam = walker.gam;
@@ -104,6 +110,47 @@ time_stamps = 100;
 t_ode = t0;
 z_ode = z0;
 
+
+if fsol==1
+for k=0:0.001:0.2
+    kk=k;
+for i=1:steps
+    check=i;
+    
+    options=odeset('abstol',1e-13,'reltol',1e-13,'events',@collision);
+    tspan = linspace(t0,t0+dt,time_stamps);
+    [t_temp, z_temp] = ode113(@single_stance,tspan,z0,options,walker);
+    
+    if i==2
+        zp=z_temp(end,1:4);
+    end
+    
+    zplus=heelstrike(t_temp(end),z_temp(end,:),walker); 
+    
+    z0 = zplus;
+    if i==1
+        zm=z0(1:4);
+    end
+    
+    
+    t0 = t_temp(end);
+    
+    %%%%% Ignore time stamps for heelstrike and first integration point
+    t_ode = [t_ode; t_temp(2:end)];
+    z_ode = [z_ode; z_temp(2:end,:)];
+    
+end
+poincare(zm,zp,k);
+
+end
+
+end
+
+
+
+
+
+if fsol==0
 for i=1:steps
     
     options=odeset('abstol',1e-13,'reltol',1e-13,'events',@collision);
@@ -111,6 +158,7 @@ for i=1:steps
     [t_temp, z_temp] = ode45(@single_stance,tspan,z0,options,walker);
     
     %%
+    if(0)
     if check==1 %%simulation part
         
         if mod(i,2)==0
@@ -162,6 +210,7 @@ figure(1)
     
     end  %end of simulation section
     %%
+    end
     zplus=heelstrike(t_temp(end),z_temp(end,:),walker); 
     
     z0 = zplus;
@@ -175,6 +224,7 @@ figure(1)
     z_ode = [z_ode; z_temp(2:end,:)];
     
 end
+end
 
 z = zplus(1:4);
 
@@ -187,6 +237,10 @@ end
 function zdot=single_stance(t,z,walker)  
 %===================================================================
 global check;
+global kk;
+global fsol;
+
+
 q1 = z(1);   u1 = z(2);                         
 q2 = z(3);   u2 = z(4);                         
                    
@@ -203,6 +257,10 @@ else
     Th=0;
 
 end 
+
+if fsol==1
+Th=kk*q2;
+end
 
 M11 = -2*m*c^2-2*m*l^2-M*l^2+2*m*l*c-2*m*r^2-M*r^2+2*m*r*c*cos(q1-q2)-2*M*r*l*cos(q1)-4*m*r*l*cos(q1)+2*m*r*c*cos(q1); 
 M12 = -m*l*c*cos(q2)+m*c^2-m*r*c*cos(q1-q2); 
@@ -281,8 +339,48 @@ u1 = X(1);
 u2 = X(2);                                      
 
  
-q1
+q1;
 zplus = [q1 u1 q2 u2 ];                     
 
+%%
+function poincare(zm,zp,k)
+persistent zmm
+persistent zpp
+persistent kkk
+zmm=[zmm;zm];
+zpp=[zpp;zp];
+kkk=[kkk;k];
+[n m]=size(zmm);
+if n==201
+    
+    figure(3)      
+    plot3(zmm(:,1),zpp(:,1),kkk)
+    axis auto  
+     grid on  
+    xlabel('theta_m'); ylabel('theta_p');zlabel('k');
+    title('gama=0.012');
+
+    figure(4)     
+     plot3(zmm(:,2),zpp(:,2),kkk)
+    axis auto
+     grid on  
+    xlabel('stance vel_m'); ylabel('stance vel_p');zlabel('k');
+    title('gama=0.012');
+    
+    figure(5)  
+    plot3(zmm(:,3),zpp(:,3),kkk)
+    axis auto
+     grid on  
+    xlabel('phi_m'); ylabel('phi_p');zlabel('k');
+   title('gama=0.012');
+    
+    figure(6)   
+    plot3(zmm(:,4),zpp(:,4),kkk)
+    axis auto
+     grid on  
+    xlabel('swing vel_m'); ylabel('swing vel_p');zlabel('k');
+    title('gama=0.012');
+ 
+end
 
 
